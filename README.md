@@ -2,4 +2,4 @@
 My final project in the Dialogue Systems course 2023.
 
 
-To be added!
+Info will be added.
