@@ -47,8 +47,13 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
       },
     },
     welcome: {
-        entry: say('Fnargs'),
-        on: {ENDSPEECH: "idle"}
+        entry: [say('Fnargs'),
+      assign({userCard: '00113.png'})],
+        on: {ENDSPEECH: "card"},
+    },
+    card: {
+      entry: ["displayUserCard",
+        say('This is Nad.')],
     }
   },
 };
