@@ -226,18 +226,21 @@ const machine = createMachine(
       displayImages: (context) => {
         const cardList = context.userImages
         const listElement = document.getElementById('userImages');
+        listElement!.innerHTML = '';
         for (let i in cardList) {
           listElement!.innerHTML += `<img src="img/${cardList[i]}" alt="Fnarg ${i}" style="width:150px;height:150px;"> `;
         };
-        
-
       },
       displayUserCard: (context) => {
         const cardElement = document.getElementById('userCard');
-        cardElement!.innerHTML = `<img src="img/${context.userCard}" alt="Fnarg 1" style="width:150px;height:150px;">`;      
+        cardElement!.innerHTML = `<img src="img/${context.userCard}" alt="Fnarg 1" style="width:300px;height:300px;">`;      
       },
+      /* checkProperties: (context) => {
+        let c = context.cardHypothesis
+        for (let propt in c) {console.log(c[propt] !== undefined);}
+      }, */
     },
-  }
+  },
 );
 
 interface Props extends React.HTMLAttributes<HTMLElement> {

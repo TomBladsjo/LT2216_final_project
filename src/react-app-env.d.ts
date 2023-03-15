@@ -34,7 +34,7 @@ interface ChatInput {
   text: string;
 }
 
-interface Card {
+/* interface Card {
   // link?: string (eg 1232.png)
   // identifyer! (name? or smth else. Can the asr recognise Fnarglebleep? No it can't!)
   id: any | undefined;
@@ -43,7 +43,18 @@ interface Card {
   colour: number | undefined;
   pinkBow: number | undefined;
   eyes: number | undefined;
+} */
+
+
+interface Card {
+  [index: string]: number | undefined;
 }
+
+interface Property {
+  feature: string;
+  value: number; 
+}
+
 
 interface SDSContext {
   parameters: Parameters;
@@ -68,13 +79,16 @@ interface SDSContext {
   nCards: number; // Default: 20? User can say "change n of cards" and specify other. Affects difficulty.
 
   //  Image URLs:
+  deck: string[];
   userImages: string[];  // The list of displayed images the user guesses based on. (eg ['11111.png', '12212.png', etc])
   userCard: string;  // The user's card, that the computer has to guess. Displayed. (eg '11001.png')
   
   // Abstract card representations:
   computerImages: Card[];  // The list of cards the computer guesses based on. Starts out representing the same images as userImages. Items removed when eliminated?
   computerCard: Card;  // The computer's card, that the user has to guess.
-  cardHypothesis: Card;  // The computer's knowledge about the user's card. Starts with all values as undefined, updates after each round. 
+  // cardHypothesis: Card;  // The computer's knowledge about the user's card. Starts with all values as undefined, updates after each round. 
+
+  nextQuestion: Property;
 }
 
 type SDSEvent =
