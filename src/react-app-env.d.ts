@@ -88,7 +88,8 @@ interface SDSContext {
   computerCard: Card;  // The computer's card, that the user has to guess.
   // cardHypothesis: Card;  // The computer's knowledge about the user's card. Starts with all values as undefined, updates after each round. 
 
-  nextQuestion: Property;
+  currentProperty: Property;
+  nextQuestion: string;
 }
 
 type SDSEvent =
