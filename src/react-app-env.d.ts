@@ -47,7 +47,7 @@ interface ChatInput {
 
 
 interface Card {
-  [index: string]: number | undefined;
+  [index: string]: number | string;
 }
 
 interface Property {
@@ -78,6 +78,7 @@ interface SDSContext {
   // Implement later if I have time:
   nCards: number; // Default: 20? User can say "change n of cards" and specify other. Affects difficulty.
 
+  names: {[index: string]: string};
   //  Image URLs:
   deck: string[];
   userImages: string[];  // The list of displayed images the user guesses based on. (eg ['11111.png', '12212.png', etc])

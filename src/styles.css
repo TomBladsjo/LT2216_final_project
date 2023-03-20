@@ -4,10 +4,94 @@
   padding: 0;
 }
 
+* {box-sizing: border-box;}
+
+/* .container {
+  position: relative;
+  width: 50%;
+  max-width: 300px;
+} */
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.overlay {
+  position: absolute; 
+  bottom: 10px; 
+  background: rgb(0, 0, 0);
+  background: rgba(0, 0, 0, 0.7); /* Black see-through */
+  color: #f1f1f1; 
+  height: 252px;/* 267px; */
+  width: 290px; /* 310px; */
+  transition: .5s ease;
+  opacity:0;
+  color: white;
+  font-size: 30px;
+  padding: 40%;
+  text-align: center;
+}
+
+.userCardContainer:hover .overlay {
+  opacity: 1;
+}
+
+.columnOverlay {
+  position: absolute; 
+  bottom: 3.5%; 
+  background: rgb(0, 0, 0);
+  background: rgba(0, 0, 0, 0.7); /* Black see-through */
+  color: #f1f1f1; 
+  width: 95%;
+  height: 93.5%;
+  transition: .5s ease;
+  opacity:0;
+  color: white;
+  font-size: 20px;
+  padding: 40%;
+  text-align: center;
+}
+
+.column {
+  position: relative;
+  float: left;
+  width: 20%;
+  padding: 5px;
+}
+
+.userCardContainer {
+  position: relative;
+  float: left;
+  left: 35%;
+  width: 310px;  
+  padding: 10px;
+}
+
+
+.row::after {  
+  content: "";
+  clear: both;
+  display: table;
+}
+
+.column:hover .columnOverlay {
+  opacity: 1;
+}
+
+p.clear {
+  clear: both;
+}
+
+.App
+
+
 html, body {
   height: 100vh;
-  background: hsla(90deg, 25%, 85%, 0.7);
+  background: #f6f0cb; /* hsla(193, 25%, 85%, 0.7) */
 }
+
 
 .App {
   font-family: IBM Plex Mono, monospace;
@@ -106,7 +190,7 @@ html, body {
 }
 
 .flex:hover {
-  background: hsl(77deg, 100%, 77%);
+  background: hsl(56, 100%, 77%);
 }
 
 img {

@@ -226,19 +226,25 @@ const machine = createMachine(
       displayImages: (context) => {
         const cardList = context.userImages
         const listElement = document.getElementById('userImages');
-        listElement!.innerHTML = '';
+        listElement!.innerHTML = '' 
         for (let i in cardList) {
-          listElement!.innerHTML += `<img src="img/${cardList[i]}" alt="Fnarg ${i}" style="width:150px;height:150px;"> `;
+          listElement!.innerHTML += `<div class="column">
+          <img src="img/${cardList[i]}" alt="Fnarg ${i}" class="image">
+          <div class="columnOverlay">${context.names[cardList[i]]}</div>
+          </div>`;
+          if (Number(i)+1 % 5 == 0) {
+            listElement!.innerHTML += `</div><div class="row">`;
+          }
         };
       },
       displayUserCard: (context) => {
+        const name = context.names[context.userCard];
         const cardElement = document.getElementById('userCard');
-        cardElement!.innerHTML = `<img src="img/${context.userCard}" alt="Fnarg 1" style="width:300px;height:300px;">`;      
+        cardElement!.innerHTML = `<img src="img/${context.userCard}" alt="Fnarg 1" class="image">
+        <div class="overlay">
+        ${name}
+      </div>`;      
       },
-      /* checkProperties: (context) => {
-        let c = context.cardHypothesis
-        for (let propt in c) {console.log(c[propt] !== undefined);}
-      }, */
     },
   },
 );

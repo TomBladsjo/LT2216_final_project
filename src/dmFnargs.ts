@@ -2,6 +2,21 @@ import { MachineConfig, send, Action, assign, Machine } from "xstate";
 
 
 ////////////////////////// functions etc /////////////////////////////
+interface Names {
+  [index: string]: string;
+}
+
+const names: Names = {'00002.png': 'Ruby', '00101.png': 'Rosie', '00113.png': 'Daisy', 
+'00212.png': 'Charlie', '00301.png': 'Molly', '00302.png': 'Willow', '00303.png': 'Bear', '01002.png': 'Roxy', 
+'01111.png': 'Toby', '01113.png': 'Frankie', '01212.png': 'Honey', '01301.png': 'Ollie', '01302.png': 'Penny', 
+'01303.png': 'Buster', '10001.png': 'Dolly', '10002.png': 'Bo', '10013.png': 'Cookie', '10101.png': 'Rex', 
+'10102.png': 'Lulu', '10201.png': 'Riley', '10203.png': 'Finn', '10312.png': 'Lucky', '11011.png': 'Sam', 
+'11013.png': 'Roddy', '11102.png': 'Cricket', '11201.png': 'Stardust', '11203.png': 'Ellie', '11312.png': 'Jax', 
+'20002.png': 'Rudy', '20103.png': 'Joey', '20111.png': 'Rusty', '20202.png': 'Benny', '20301.png': 'Doddy', 
+'20303.png': 'Ace', '21012.png': 'Clover', '21101.png': 'Moose', '21103.png': 'Sunny', '21202.png': 'Cody', 
+'21311.png': 'Dixie', '21313.png': 'Buttercup', '30003.png': 'Ping', '30011.png': 'Trixie', '30102.png': 'Bob', 
+'30201.png': 'River', '30203.png': 'Sage', '31001.png': 'Bubba', '31003.png': 'Levi', '31112.png': 'Foxy', 
+'31211.png': 'Angel', '31213.png': 'Angus'};
 
 const allCards: string[] = ['00002.png', '00101.png', '00113.png', 
 '00212.png', '00301.png', '00302.png', '00303.png', '01002.png', 
@@ -58,7 +73,7 @@ function shuffle(arr: Array<any>) {
 const getCardData = (imageName: string) => {
     let code = imageName.replace(/\.png$/g, "");
     const card: Card = {
-        id: Number(code),
+        name: names[imageName],
         item: Number(code[0]),
         horns: Number(code[1]),
         colour: Number(code[2]),
@@ -76,7 +91,7 @@ const initCards = (cardList: Array<string>) => {
   return shuffle(cardsInGame)
 };
 
-const unknownCard = () => {
+/* const unknownCard = () => {
     let card: Card = {
         item: undefined,
         horns: undefined,
@@ -85,7 +100,7 @@ const unknownCard = () => {
         eyes: undefined,
     }
     return card
-};
+}; */
 
 
 
@@ -185,6 +200,31 @@ const filterCards = (context: SDSContext, yesno: string | undefined) => {
 // nlu:
 
 // - guard functions:
+
+const help = (context:SDSContext) => {
+  let u = context.recResult[0].utterance.toLowerCase().replace(/\.$/g, "");
+  const reHelp = /help/;
+  if (u.match(reHelp)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+const nameGuess = (context: SDSContext) => {
+  let u = context.recResult[0].utterance.toLowerCase();
+  for (let image of context.userImages) {
+    if (u.includes(names[image].toLowerCase())) {
+      return names[image];
+    }
+  } 
+  return false;
+}
+
+const checkName = (context: SDSContext, name: string) => {
+  let trueName = context.computerCard.name as string
+  return name == trueName
+}
 
 const yesNoResponse = (context: SDSContext) => {
   let u = context.recResult[0].utterance.toLowerCase().replace(/\.$/g, "");
@@ -334,26 +374,79 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
     init: {
       entry: assign({deck: shuffle(allCards)}),
       on: {
-        TTS_READY: "welcome",
-        CLICK: "welcome",
+        TTS_READY: "game", // "welcome"
+        CLICK: "game", // "welcome"
       },
     },
+    help: {
+      id: "help",
+      entry: say(`This is a help message!`),
+      on: { ENDSPEECH: "game.history" },
+      },
     welcome: {
-        entry: [say('Hi!'),],
-        on: {ENDSPEECH: "game"},
+        initial: "prompt",
+        on: {
+          RECOGNISED: [
+            {
+              target: ".startGame",
+              cond: (context) => yesNoResponse(context) == 'yes',
+            },
+            {
+              target: ".explainRules",
+              cond: (context) => yesNoResponse(context) == 'no',
+            },
+            {
+              target: ".nomatch"
+            },
+          ],
+          TIMEOUT: ".reprompt",
+        },
+        states: {
+          prompt: {
+            entry: say('Hi! Welcome to the Fnargs game! Have you played this game before?'),
+            on: {ENDSPEECH: "ask"},
+          },
+          reprompt: 
+          {
+            entry: say('Have you played this game before?'),
+            on: {ENDSPEECH: "ask"},
+          },
+          nomatch: 
+          {
+            entry: say("Sorry, I didn't catch that."),
+            on: {ENDSPEECH: "reprompt"},
+          },
+          ask: {
+            entry: send('LISTEN'),
+          },
+          explainRules: {
+              entry: say('This is a message where I explain the rules.'),
+              on: {ENDSPEECH: "#game"},
+          },
+          startGame: {
+            entry: say("Ok! If you are unsure of the rules at any point during the game, just say help and I will repeat them for you."),
+            on: {ENDSPEECH: "#game"},
+          },
+        },
     },
     game: {
+    id: "game",
     initial: "newGame",
     states: {
+      history: {
+        type: 'history',
+        history: 'deep'
+      },
     newGame: {
       id: "newGame",
       initial: "init",
       states: {
         init: {
           entry: [
+            assign({names: names}),
             assign({deck: (context) => shuffle(context.deck)}),
             assign({userCard: (context) => context.deck[0]}),
-            assign({userImages: (context) => context.deck.slice(1, 24)}),
+            assign({userImages: (context) => context.deck.slice(1, 26)}),
             assign({computerImages: (context) => initCards(context.userImages)}),
             assign({computerCard: (context) => context.computerImages.pop() as Card}),
             assign({computerImages: (context) => context.computerImages.concat(getCardData(context.userCard))}),
@@ -365,15 +458,15 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           },
         userCard: {
           entry: ["displayUserCard",
-            say('This is Fnarglebleep.'),],
+            say('This is your fnarg, that I will try to guess. If you hover near the bottom of the image, you will see its name.'),],
           on: {ENDSPEECH: "allImages"},
           },
         allImages: {
-          entry: ["checkProperties",
+          entry: [
             "displayImages",
-            say('And this is everyone else!')
+            say('And here are all its friends. Hover over them to see their names. Can you guess which one is mine?')
             ],
-            on: {ENDSPEECH: "#computerTurn"},
+            on: {ENDSPEECH: "#userTurn"},
             },
           },
         },
@@ -393,7 +486,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
               ], 
             },
             computerAsk: {
-          initial: "prompt",
+          initial: "turnChange",
           on: {
             RECOGNISED: [
               {
@@ -409,6 +502,10 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
             TIMEOUT: ".prompt"
           },
           states: {
+            turnChange: {
+              entry: say('Ok, my turn.'),
+              on: {ENDSPEECH: "prompt"},
+            },
             prompt: {
               entry: send((context) => ({
                 type: "SPEAK",
@@ -426,7 +523,45 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           },
         },
         computerGuess: {
-
+          initial: "guess",
+          on: {
+            RECOGNISED: [
+              {
+                target: ".wasRight",
+                cond: (context) => yesNoResponse(context) == 'yes',
+              },
+              {
+                target: ".wasWrong",
+                cond: (context) => yesNoResponse(context) == 'no',
+              },
+              {target: ".nomatch"},
+            ],
+          },
+          states:
+          {
+            guess: {
+              entry: send((context) => ({
+                type: "SPEAK",
+                value: `Is it ${context.computerImages[0].name}?`,
+              })),
+              on: { ENDSPEECH: "ask" },
+            },
+            ask: {
+              entry: send("LISTEN"),
+            },
+            wasRight: {
+              entry: say("Yay, I won!"),
+              on: {ENDSPEECH: "#result"},
+            },
+            wasWrong: {
+              entry: say("Oh, bother!"),  // say are you sure, have you been messing with me? etc
+              on: {ENDSPEECH: "#userTurn"},
+            },
+            nomatch: {
+              entry: say("I don't understand, please repeat!"),
+              on: {ENDSPEECH: "ask"},
+            },
+          },
         },
       },
     },
@@ -461,6 +596,10 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
                   cond: (context) => !!understandAndCheck(context),
                 },
                 {
+                  target: "userGuess",
+                  cond: (context) => !!nameGuess(context),
+                },
+                {
                   target: "gender",
                   cond: (context) => aboutGender(context),
                 },
@@ -473,6 +612,30 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
                 value: understandAndCheck(context),
               })),
               on: { ENDSPEECH: "#computerTurn" },
+            },
+            userGuess: {
+              initial: "check",
+              states: {
+                check: {
+                  always: [
+                    {
+                      target: "yes",
+                      cond: (context) => checkName(context, nameGuess(context) as string),
+                    },
+                    {
+                      target: "no",
+                    },
+                  ],
+                },
+                no: {
+                  entry: say('No, sorry,'),
+                  on: {ENDSPEECH: "#computerTurn"},
+                },
+                yes: {
+                  entry: say("Congratulations, you won!"),
+                  on: {ENDSPEECH: "#result"}
+                }
+              },
             },
             gender: {
               entry: say("Fnargs have not invented the cultural concept of gender. All fnargs are fnargs."),
@@ -495,7 +658,8 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
       },
     },
     result: {
-
+      id: "result",
+      entry: say(`That was fun! Do you want to play again?`),
     },
       },
     },
