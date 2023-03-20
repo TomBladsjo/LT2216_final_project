@@ -91,19 +91,6 @@ const initCards = (cardList: Array<string>) => {
   return shuffle(cardsInGame)
 };
 
-/* const unknownCard = () => {
-    let card: Card = {
-        item: undefined,
-        horns: undefined,
-        colour: undefined,
-        pinkBow: undefined,
-        eyes: undefined,
-    }
-    return card
-}; */
-
-
-
 
 // computer's turn
 
@@ -126,31 +113,33 @@ const relevantProperty = (context: SDSContext) => {
 };
 
 const question = (property: Property) => {
+  const isVariations = ['Is it', 'Is yours', 'Is your fnarg', 'Are they'];
+  const doesVariations = ['Does it', 'Does yours', 'Does your fnarg', 'Do they'];
   let f = property.feature;
   let v = property.value;
   if (f == 'item') {
     if (v == 0) {
-      return "Is it empty-handed? I mean, tentacled? Whatevered?";
+      return `${shuffle(isVariations)[0]} empty-handed? I mean, tentacled?`;
     } else {
       let item = grammar.item[v];
-      return `Is it holding a ${item}?`;
+      return `${shuffle(isVariations)[0]} holding a ${item}?`;
     }
   }
   if (f == 'horns') {
-    return "Does it have horns?";
+    return `${shuffle(doesVariations)[0]} have horns?`;
   }
   if (f == 'colour') {
     let colour = grammar.colour[v];
-    return `Is it ${colour}?`;
+    return `${shuffle(isVariations)[0]} ${colour}?`;
   }
   if (f == 'pinkBow') {
-    return "Does it have a pink bow on its head?";
+    return `${shuffle(doesVariations)[0]} have a pink bow on its head?`;
   }
   if (f == 'eyes') {
     if (v == 1) {
-      return "Does it have only one eye?";
+      return `${shuffle(doesVariations)[0]} have only one eye?`;
     } else {
-      return `Does it have ${v} eyes?`;
+      return `${shuffle(doesVariations)[0]} have ${v} eyes?`;
     }
   }
 };
@@ -228,9 +217,9 @@ const checkName = (context: SDSContext, name: string) => {
 
 const yesNoResponse = (context: SDSContext) => {
   let u = context.recResult[0].utterance.toLowerCase().replace(/\.$/g, "");
-  const reYes = /yes/;
-  const reNo = /no/;
-  if (u.match(reYes)) {
+  const reYes = /(yes|yep|yup|sure|definitely|absolutely|yeah)/;
+  const reNo = /(no|n't|never)/;
+  if (u.match(reYes) && !u.match(/not/)) {
     return "yes";
   } else if (u.match(reNo)) {
     return "no";
@@ -358,6 +347,10 @@ const understandAndCheck = (context: SDSContext) => {
   }
 }
 
+////////////////////////// text material ////////////////////////////
+
+const helpText = `You are playing this game against me, the computer. We each have an identical set of 26 fnargs, one of which is our special fnarg. For you, this fnarg is displayed at the top of the screen. Your job is to guess which of the 26 fnargs is my special fnarg, before I guess which is yours. To do this, we will take turns asking each other yes no questions, such as "is your fnarg blue?" or "is it carrying an item?". If you manage to name my special fnarg first, you have won. Hover the cursor over the fnarg images to see their names. Good luck!`;
+const yourTurnReprompts = ['Your turn!', "Hey, it's your turn!", "It's your turn!", "Your turn, ask me something!", "Hey, don't fall asleep! It's your turn!", "It's your turn to ask!", "Come on, ask me a question!", "Don't think too much, just ask something!"];
 
 /////////////////////////////////// machine ///////////////////////////////////
 
@@ -365,6 +358,7 @@ const understandAndCheck = (context: SDSContext) => {
 
 export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
   initial: "idle",
+  id: "idle",
   states: {
     idle: {
       on: {
@@ -374,13 +368,13 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
     init: {
       entry: assign({deck: shuffle(allCards)}),
       on: {
-        TTS_READY: "game", // "welcome"
-        CLICK: "game", // "welcome"
+        TTS_READY: "welcome", 
+        CLICK: "welcome", 
       },
     },
     help: {
       id: "help",
-      entry: say(`This is a help message!`),
+      entry: say(helpText),
       on: { ENDSPEECH: "game.history" },
       },
     welcome: {
@@ -420,7 +414,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
             entry: send('LISTEN'),
           },
           explainRules: {
-              entry: say('This is a message where I explain the rules.'),
+              entry: say(`Ok! Then I will quickly explain the rules before we begin. ${helpText}`),
               on: {ENDSPEECH: "#game"},
           },
           startGame: {
@@ -458,7 +452,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           },
         userCard: {
           entry: ["displayUserCard",
-            say('This is your fnarg, that I will try to guess. If you hover near the bottom of the image, you will see its name.'),],
+            say('Alright! This is your fnarg, that I will try to guess. If you hover near the bottom of the image, you will see its name.'),],
           on: {ENDSPEECH: "allImages"},
           },
         allImages: {
@@ -490,6 +484,10 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           on: {
             RECOGNISED: [
               {
+                target: "#help",
+                cond: (context) => help(context),
+              },
+              {
                 target: "#userTurn",
                 cond: (context) => !!yesNoResponse(context),
                 actions: [assign({computerImages: (context) => filterCards(context, yesNoResponse(context) as string)}), 
@@ -498,8 +496,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
               },
               {target: ".nomatch"}
             ],
-            ENDSPEECH: ".ask",
-            TIMEOUT: ".prompt"
+            TIMEOUT: ".prompt",
           },
           states: {
             turnChange: {
@@ -526,6 +523,10 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           initial: "guess",
           on: {
             RECOGNISED: [
+              {
+                target: "#help",
+                cond: (context) => help(context),
+              },
               {
                 target: ".wasRight",
                 cond: (context) => yesNoResponse(context) == 'yes',
@@ -571,6 +572,10 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
       on: {
         RECOGNISED: [
           {
+            target: "#help",
+            cond: (context) => help(context),
+          },
+          {
             target: ".respond",
             cond: (context) => isYesNoQuestion(context),
           },
@@ -580,7 +585,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
       },
       states:{
         prompt: {
-          entry: say('Ok, your turn!'),
+          entry: say('Your turn!'),
           on: {ENDSPEECH: "ask"}
         },
         ask: {
@@ -648,7 +653,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           },
         },
         reprompt: {
-          entry: say("Hey, it's your turn!"),
+          entry: say("It's your turn!"),
           on: { ENDSPEECH: "ask" },
         },
         nomatch: {
@@ -659,12 +664,36 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
     },
     result: {
       id: "result",
-      entry: say(`That was fun! Do you want to play again?`),
+      initial: "prompt",
+      on: {RECOGNISED: [
+        {
+          target: "#newGame",
+          cond: (context) => yesNoResponse(context) == 'yes',
+        },
+        {
+          target: ".goodbye",
+        }
+      ],
+      ENDSPEECH: ".ask",
+    },
+      states: {
+        prompt: {
+          entry: say(`That was fun! Do you want to play again?`)
+        },
+        ask: {
+          entry: send("LISTEN"),
+        },
+        goodbye: {
+          entry: say("Alright. It's been fun playing with you! Come back soon!"),
+          on: {ENDSPEECH: "#idle"},
+        },
+      },
     },
       },
     },
   },
 };
+
 
 
 
