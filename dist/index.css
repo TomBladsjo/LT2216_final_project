@@ -5,6 +5,35 @@
   padding: 0;
 }
 
+.infoText {
+  width: 50%;
+  max-width: 300px;
+  font-family: IBM Plex Mono, monospace;
+  font-style: italic;
+  font-weight: light;
+  text-align: center;
+  color: #532040dd;
+  font-size: 20pt;
+  position: absolute;
+  top: 17%;
+  left: 10%;
+}
+
+.userCardName {
+  float: right;
+  width: 50%;
+  max-width: 300px;
+  font-family: IBM Plex Mono, monospace;
+  font-style: italic;
+  font-weight: light;
+  text-align: center;
+  color: #2c3761bc;
+  font-size: 17pt;
+  position: relative;
+  top: 30%;
+  right: 22%;
+}
+
 .image {
   width: 100%;
   height: 100%;
@@ -36,10 +65,13 @@
   height: 93.5%;
   opacity: 0;
   color: #fff;
+  font-family: IBM Plex Mono, monospace;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: light;
   text-align: center;
   background: #000000b3;
   padding: 40%;
-  font-size: 20px;
   transition: all .5s;
   position: absolute;
   bottom: 3.5%;
@@ -76,7 +108,7 @@ p.clear {
 
 .App html, body {
   height: 100vh;
-  background: #f6f0cb;
+  background: #ffd6bd;
 }
 
 .App {
@@ -134,7 +166,7 @@ p.clear {
   height: 80px;
   cursor: pointer;
   z-index: 0;
-  background-color: #ba6969;
+  background-color: #510541b0;
   border: 0;
   border-radius: 50px;
   position: absolute;
@@ -184,7 +216,7 @@ p.clear {
 }
 
 .flex:hover {
-  background: #fff78a;
+  background: #8affe4;
 }
 
 img {

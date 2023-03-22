@@ -120,7 +120,7 @@ const machine = createMachine(
             exit: "recStop",
             on: {
               ASRRESULT: {
-                actions: "assignRecResult",
+                actions: ["assignRecResult", "sendRecognised"],
                 target: ".match",
               },
               RECOGNISED: { target: "idle", actions: "recLogResult" },
@@ -147,7 +147,7 @@ const machine = createMachine(
               },
               inprogress: {},
               match: {
-                invoke: {
+                /* invoke: {
                   id: "getIntents",
                   src: (context) => getIntents(context),
                   onDone: {
@@ -156,7 +156,7 @@ const machine = createMachine(
                   onError: {
                     actions: "sendRecognised",
                   },
-                },
+                }, */
               },
               pause: {
                 entry: "recStop",
@@ -205,11 +205,11 @@ const machine = createMachine(
         recResult: (_context, event: any) => event.value,
       }),
       sendEndspeech: send("ENDSPEECH"),
-      assignIntents: assign({
+      /* assignIntents: assign({
         nluResult: (_context, event: any) => {
           return event.data.result;
         },
-      }),
+      }), */
       sendRecognised: send("RECOGNISED"),
       recLogResult: (context: SDSContext) => {
         console.log("U>", context.recResult[0]["utterance"], {
@@ -241,9 +241,33 @@ const machine = createMachine(
         const name = context.names[context.userCard];
         const cardElement = document.getElementById('userCard');
         cardElement!.innerHTML = `<img src="img/${context.userCard}" alt="Fnarg 1" class="image">
-        <div class="overlay">
-        ${name}
-      </div>`;      
+        <div class="userCardName">
+        <b>${name}</b>
+      </div>`;      // class="overlay"
+      },
+      userTurn: (context) => {
+        const textBox = document.getElementById('turnInfo');
+        textBox!.innerHTML = '<b>Your turn</b>'
+      },
+      computerTurn: (context) => {
+        const textBox = document.getElementById('turnInfo');
+        textBox!.innerHTML = '<b>My turn</b>'
+      },
+      userWin: (context) => {
+        const textBox = document.getElementById('turnInfo');
+        textBox!.innerHTML = '<b>You won!</b>'
+      },
+      computerWin: (context) => {
+        const textBox = document.getElementById('turnInfo');
+        textBox!.innerHTML = '<b>I won!</b>'
+      },
+      removeCards: (context) => {
+        const cardElement = document.getElementById('userCard');
+        cardElement!.innerHTML = '';
+        const listElement = document.getElementById('userImages');
+        listElement!.innerHTML = '';
+        const textBox = document.getElementById('turnInfo');
+        textBox!.innerHTML = ''
       },
     },
   },
@@ -304,14 +328,14 @@ function App({ domElement }: any) {
       ttsLexicon: domElement.getAttribute("data-tts-lexicon"),
       asrLanguage: domElement.getAttribute("data-asr-language") || "en-US",
       azureKey: domElement.getAttribute("data-azure-key"),
-      azureNLUKey: domElement.getAttribute("data-azure-nlu-key"),
+  /*     azureNLUKey: domElement.getAttribute("data-azure-nlu-key"),
       azureNLUUrl: domElement.getAttribute("data-azure-nlu-url"),
       azureNLUprojectName: domElement.getAttribute(
         "data-azure-nlu-project-name"
       ),
       azureNLUdeploymentName: domElement.getAttribute(
         "data-azure-nlu-deployment-name"
-      ),
+      ), */
     },
   };
   const [state, send] = useMachine(machine, {
@@ -327,7 +351,7 @@ function App({ domElement }: any) {
         /* console.log('Recognition stopped.'); */
       },
       ttsStart: (context) => {
-        let content = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="en-US"><voice name="${context.voice.name}"><lexicon uri="https://cvoiceprodneu.blob.core.windows.net/acc-public-files/b536f004df954ad2af9420d8774164f9/757445fe-6ad7-4f23-b33e-e457de115a03.xml" />`;
+        let content = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="en-US"><voice name="${context.voice.name}" pitch="low"><lexicon uri="https://cvoiceprodneu.blob.core.windows.net/acc-public-files/b536f004df954ad2af9420d8774164f9/757445fe-6ad7-4f23-b33e-e457de115a03.xml" />`;
         content =
           content +
           (process.env.REACT_APP_TTS_LEXICON
@@ -401,7 +425,7 @@ const getAuthorizationToken = (azureKey: string) =>
     })
   ).then((data) => data.text());
 
-const getIntents = (context: SDSContext) =>
+/* const getIntents = (context: SDSContext) =>
   fetch(
     new Request(context.parameters.azureNLUUrl, {
       method: "POST",
@@ -428,7 +452,7 @@ const getIntents = (context: SDSContext) =>
         },
       }),
     })
-  ).then((data) => data.json());
+  ).then((data) => data.json()); */
 
 const rootElement = document.getElementById("speechstate");
 ReactDOM.render(<App domElement={rootElement} />, rootElement);

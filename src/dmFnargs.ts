@@ -113,8 +113,8 @@ const relevantProperty = (context: SDSContext) => {
 };
 
 const question = (property: Property) => {
-  const isVariations = ['Is it', 'Is yours', 'Is your fnarg', 'Are they'];
-  const doesVariations = ['Does it', 'Does yours', 'Does your fnarg', 'Do they'];
+  const isVariations = ['Is it', 'Is yours', 'Is your fnarg'];
+  const doesVariations = ['Does it', 'Does yours', 'Does your fnarg'];
   let f = property.feature;
   let v = property.value;
   if (f == 'item') {
@@ -184,11 +184,20 @@ const filterCards = (context: SDSContext, yesno: string | undefined) => {
 };
 
 
+// asr confidence threshold:
+
+const asrTreshold = (context: SDSContext) => {
+  let confidence = context.asrHypothesis.confidence;
+  if (confidence >= 0.7){
+    return true
+  } else { 
+    return false
+  }
+};
 
 
-// nlu:
-
-// - guard functions:
+// nlu(ish):
+// (guard functions etc)
 
 const help = (context:SDSContext) => {
   let u = context.recResult[0].utterance.toLowerCase().replace(/\.$/g, "");
@@ -248,9 +257,6 @@ const aboutGender = (context: SDSContext) => {
 }
 
 
-
-// - long and messy nlu function 
-
 const understandAndCheck = (context: SDSContext) => {
 
   const reColour = /(blue|green|red|yellow)/
@@ -272,7 +278,7 @@ const understandAndCheck = (context: SDSContext) => {
   } 
   if (u.match(reEyes)) {
     let trueVal = card.eyes;
-    if (u.match(/(single|one|1)/)) {
+    if (u.match(/(single|one|1)/) && !u.match(/more/)) {
       if (trueVal == 1) {
         return 'yes';
       } else {
@@ -288,6 +294,13 @@ const understandAndCheck = (context: SDSContext) => {
     }
     if (u.match(/(three|3)/)) {
       if (trueVal == 3) {
+        return 'yes';
+      } else {
+        return 'no';
+      }
+    }
+    if (u.match(/more than one/)) {
+      if (trueVal != 1) {
         return 'yes';
       } else {
         return 'no';
@@ -347,20 +360,93 @@ const understandAndCheck = (context: SDSContext) => {
   }
 }
 
-////////////////////////// text material ////////////////////////////
+////////////////////////// text material and utterance functions ////////////////////////////
 
 const helpText = `You are playing this game against me, the computer. We each have an identical set of 26 fnargs, one of which is our special fnarg. For you, this fnarg is displayed at the top of the screen. Your job is to guess which of the 26 fnargs is my special fnarg, before I guess which is yours. To do this, we will take turns asking each other yes no questions, such as "is your fnarg blue?" or "is it carrying an item?". If you manage to name my special fnarg first, you have won. Hover the cursor over the fnarg images to see their names. Good luck!`;
-const yourTurnReprompts = ['Your turn!', "Hey, it's your turn!", "It's your turn!", "Your turn, ask me something!", "Hey, don't fall asleep! It's your turn!", "It's your turn to ask!", "Come on, ask me a question!", "Don't think too much, just ask something!"];
+const yourTurn = ['Ok, your turn!', 'Your turn!', 'Hmm, ok...', 'Aha!', 'Hmm, I see...', 'Oh, really? Hmm...', 'Hmm, ok...', 'Ok...']; 
+const myTurn = ['Ok, my turn!', 'My turn!', 'Alright, my turn!']; 
+const yourTurnReprompts = ['Your turn!', "Hey, it's your turn!", "It's your turn!", "Your turn, ask me something!", "Hey, don't fall asleep! It's your turn!", "It's your turn to ask!", "Come on, ask me a question!", "Don't think too much, just ask something!", "Go on, it's your turn!"];
+const noResponseReprompts = ['Did you fall asleep?', 'Answer the question.', 'Hello?', 'Are you still there?', 'Hey, I asked you a question?', 'Answer the question please.', 'Hello?'];
+const noMatch = ["I don't think I heard you properly. Could you repeat that?", "I'm sorry, what did you say?", "Excuse me?", "Sorry, I didn't catch that.", "Sorry, what?", "Could you repeat that? I don't think I heard you properly."];
+const noMatchOOV = ["I don't know that.", "I don't know, you will have to ask about something else.", "I don't understand the question. Try something else.", "I don't know. If you want to win, you have to ask better questions!", "I don't know, and I'm pretty sure that's not a relevant question. Try again.", "I don't know. Are you sure that's a relevant question?"];
+const noMatchYesnoQuestion = noMatch.concat(["I don't understand. Are you sure that was a yes no question?", "Remember, you can only ask yes no questions!", "Hey, the question has to be something I can answer yes or no to!"]);
+const noMatchYesNo = noMatch.concat(["Was that a yes?", "Was that a yes?", "Did you say yes?", "Was that a yes?"]);
+const noInputGoodbye = ['Alright, suit yourself.', 'Ok, bye.', 'Ok, goodbye.', 'Ok, goodbye then', 'Fine.'];
+let yourturn = shuffle(yourTurn);
+
+
+const sayMyTurn = (context: SDSContext) => {
+  if (context.turnCount > 0) {
+    if (Math.random() > 0.4 ) {
+      return shuffle(myTurn)[0];
+    }
+  } else {
+    return '';
+  }
+}
+
+const sayYourTurn = () => {
+  return shuffle(yourturn)[0];
+}
+
+const sayUserCard = (context: SDSContext) => {
+  const firstGame = 'Alright! This is your fnarg, that I will try to guess. You can see its name under the image.';
+  const variations = ['Alright, here is your fnarg!', 'This is your fnarg!', "Here is your new fnarg!", "Alright, here is your new special fnarg!", "Ok, here is another fnarg for you!", "Here is your new best friend!"];
+  if (context.gameNr == 1) {
+    return firstGame;
+  } else {
+    return shuffle(variations)[0]; 
+  }
+};
+
+const sayUserImages = (context: SDSContext) => {
+  const firstGame = 'And here are all its friends. Hover over them to see their names. Can you guess which one is mine?';
+  const variations = ['And here are all the others!', 'And here are its friends!', 'And here are the rest of them!', 'And the rest of them!', 'And all its little friends!'];
+  const rememberHelp = ` Remember that you can say help at any time to get a quick recap of the rules.`
+  if (context.gameNr == 1) {
+    return firstGame;
+  }
+  if (context.gameNr % 2 == 0) {
+    return shuffle(variations)[0]+rememberHelp
+  } else {
+    return shuffle(variations)[0];
+  }
+};
+
+const sayNoMatch = (context: SDSContext, version: 'yesnoResponse' | 'notYesnoQuestion' | 'outOfVocab') => {
+  const lateNoMatch = `I still don't understand. You have to remember that I am just a stupid computer. Be kind to me please!`;
+  const finalNoMatch = `Ok, now you're just messing with me!`;
+  if (context.noMatchCount < 4) {
+    if (version == 'yesnoResponse') {
+      return shuffle(noMatchYesNo)[0];
+    } 
+    if (version == 'notYesnoQuestion') {
+      return shuffle(noMatchYesnoQuestion)[0];
+    }
+    if (version == 'outOfVocab') {
+      return shuffle(noMatchOOV)[0];
+    }
+  } 
+  if (context.noMatchCount == 4) {
+    if (version == 'outOfVocab') {
+      return "Hey, be kind to me, I am just a stupid computer!";
+    }
+    return lateNoMatch;
+  } 
+  if (context.noMatchCount == 5) {
+    return finalNoMatch;
+  }
+}
+
 
 /////////////////////////////////// machine ///////////////////////////////////
 
 
-
 export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
   initial: "idle",
-  id: "idle",
   states: {
     idle: {
+      id: "idle",
       on: {
         CLICK: "init",
       },
@@ -368,8 +454,8 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
     init: {
       entry: assign({deck: shuffle(allCards)}),
       on: {
-        TTS_READY: "welcome", 
-        CLICK: "welcome", 
+        TTS_READY: "#game", //welcome
+        CLICK: "#game", //welcome
       },
     },
     help: {
@@ -377,7 +463,13 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
       entry: say(helpText),
       on: { ENDSPEECH: "game.history" },
       },
+    noInputGoodbye: {
+      id: "noInputGoodbye",
+      entry: say(shuffle(noInputGoodbye)[0]),
+      on: {ENDSPEECH: "#idle"}
+    },
     welcome: {
+        entry: [assign({noMatchCount: 0}), assign({promptCount: 0})],
         initial: "prompt",
         on: {
           RECOGNISED: [
@@ -390,25 +482,49 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
               cond: (context) => yesNoResponse(context) == 'no',
             },
             {
-              target: ".nomatch"
+              target: ".nomatch",
+              cond: (context) => context.noMatchCount < 6,
             },
+            {
+              target: "#noInputGoodbye"
+            }
           ],
-          TIMEOUT: ".reprompt",
+          TIMEOUT: [
+            {
+              target: "#noInputGoodbye",
+              cond: (context) => context.promptCount > 5
+            },
+            {
+              target: ".reprompt1",
+              cond: (context) => context.promptCount % 2 == 1
+            },
+            {
+              target: ".reprompts",
+            }
+          ],
         },
         states: {
           prompt: {
             entry: say('Hi! Welcome to the Fnargs game! Have you played this game before?'),
             on: {ENDSPEECH: "ask"},
           },
-          reprompt: 
-          {
+          reprompt1: {
             entry: say('Have you played this game before?'),
+            exit: assign({promptCount: (context) => context.promptCount +1}),
             on: {ENDSPEECH: "ask"},
           },
-          nomatch: 
-          {
-            entry: say("Sorry, I didn't catch that."),
-            on: {ENDSPEECH: "reprompt"},
+          reprompts: {
+            entry: say(shuffle(noResponseReprompts)[0]),
+            exit: assign({promptCount: (context) => context.promptCount +1}),
+            on: {ENDSPEECH: "ask"},
+          },
+          nomatch: {
+            entry: send((context) => ({
+              type: "SPEAK", 
+              value: sayNoMatch(context, 'yesnoResponse')
+            })),
+            exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
+            on: {ENDSPEECH: "reprompt1"},
           },
           ask: {
             entry: send('LISTEN'),
@@ -419,6 +535,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           },
           startGame: {
             entry: say("Ok! If you are unsure of the rules at any point during the game, just say help and I will repeat them for you."),
+            exit: assign({gameNr: 1}),
             on: {ENDSPEECH: "#game"},
           },
         },
@@ -445,6 +562,9 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
             assign({computerCard: (context) => context.computerImages.pop() as Card}),
             assign({computerImages: (context) => context.computerImages.concat(getCardData(context.userCard))}),
             assign({currentProperty: (context) => relevantProperty(context) as Property}),
+            assign({turnCount: 0}),
+            assign({yourTurn: shuffle(yourTurn)}),
+            assign({myTurn: shuffle(myTurn)}),
           ],
           always: {
             target: "userCard",
@@ -452,23 +572,46 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           },
         userCard: {
           entry: ["displayUserCard",
-            say('Alright! This is your fnarg, that I will try to guess. If you hover near the bottom of the image, you will see its name.'),],
+          send((context) => ({
+            type: "SPEAK",
+            value: sayUserCard(context),
+          }))],
           on: {ENDSPEECH: "allImages"},
           },
         allImages: {
           entry: [
             "displayImages",
-            say('And here are all its friends. Hover over them to see their names. Can you guess which one is mine?')
-            ],
+            send((context) => ({
+              type: "SPEAK",
+              value: sayUserImages(context),
+            }))],
             on: {ENDSPEECH: "#userTurn"},
             },
           },
         },
         computerTurn: {
           id: "computerTurn",
-          // entry: say("OK, my turn!"),
-          initial: "statusCheck",
+          entry: ["computerTurn", assign({turnCount: (context) => context.turnCount + 1}), assign({myTurn: (context) => shuffle(context.myTurn)})],
+          initial: "first",
           states: {
+            first: {
+              always: [
+                {
+                  target: "turnChange",
+                  cond: (context) => Math.random() > 0.7,
+                },
+                {
+                  target: "statusCheck",
+                },
+              ],
+            },
+            turnChange: {
+              entry: send((context) => ({
+                type: "SPEAK",
+                value: shuffle(context.myTurn)[0],
+              })),
+              on: {ENDSPEECH: "statusCheck"},
+            },
             statusCheck: {
               always: [
                 {target: "computerAsk",
@@ -480,7 +623,8 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
               ], 
             },
             computerAsk: {
-          initial: "turnChange",
+              entry: [assign({noMatchCount: 0}),assign({promptCount: 0})],
+          initial: "prompt",
           on: {
             RECOGNISED: [
               {
@@ -492,34 +636,59 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
                 cond: (context) => !!yesNoResponse(context),
                 actions: [assign({computerImages: (context) => filterCards(context, yesNoResponse(context) as string)}), 
                   assign({currentProperty: (context) => relevantProperty(context) as Property})
-                ], // also say eg "hmm, ok..."
+                ], 
               },
-              {target: ".nomatch"}
+              {
+                target: ".nomatch",
+                cond: (context) => context.noMatchCount < 6,
+              },
+              {
+                target: "#noInputGoodbye"
+              },
             ],
-            TIMEOUT: ".prompt",
+            TIMEOUT: [
+              {
+                target: "#noInputGoodbye",
+                cond: (context) => context.promptCount > 4
+              },
+              {
+                target: ".prompt",
+                cond: (context) => context.promptCount % 2 == 1
+              },
+              {
+                target: ".reprompt",
+              }
+            ],
           },
           states: {
-            turnChange: {
-              entry: say('Ok, my turn.'),
-              on: {ENDSPEECH: "prompt"},
-            },
             prompt: {
               entry: send((context) => ({
                 type: "SPEAK",
                 value: context.nextQuestion,
               })),
+              exit: assign({promptCount: (context) => context.promptCount +1}),
               on: { ENDSPEECH: "ask" },
+            },
+            reprompt: {
+              entry: say(shuffle(noResponseReprompts)[0]),
+              exit: assign({promptCount: (context) => context.promptCount +1}),
+              on: {ENDSPEECH: "ask"},
             },
             ask: {
               entry: send("LISTEN"),
             },
             nomatch: {
-              entry: say("I don't understand, please repeat."),
+              entry: send((context) => ({
+                type: "SPEAK", 
+                value: sayNoMatch(context, 'yesnoResponse')
+              })),
+              exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
               on: { ENDSPEECH: "ask" },
             }
           },
         },
         computerGuess: {
+          entry: [assign({noMatchCount: 0}), assign({promptCount: 0})],
           initial: "guess",
           on: {
             RECOGNISED: [
@@ -535,7 +704,26 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
                 target: ".wasWrong",
                 cond: (context) => yesNoResponse(context) == 'no',
               },
-              {target: ".nomatch"},
+              {
+                target: ".nomatch",
+                cond: (context) => context.noMatchCount < 6,
+              },
+              {
+                target: "#noInputGoodbye",
+              },
+            ],
+            TIMEOUT: [
+              {
+                target: "#noInputGoodbye",
+                cond: (context) => context.promptCount > 4
+              },
+              {
+                target: ".guess",
+                cond: (context) => context.promptCount % 2 == 0
+              },
+              {
+                target: ".reprompt",
+              }
             ],
           },
           states:
@@ -545,21 +733,67 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
                 type: "SPEAK",
                 value: `Is it ${context.computerImages[0].name}?`,
               })),
+              exit: assign({promptCount: (context) => context.promptCount +1}),
               on: { ENDSPEECH: "ask" },
+            },
+            reprompt: {
+              entry: say(shuffle(noResponseReprompts)[0]),
+              exit: assign({promptCount: (context) => context.promptCount +1}),
+              on: {ENDSPEECH: "ask"},
             },
             ask: {
               entry: send("LISTEN"),
             },
             wasRight: {
-              entry: say("Yay, I won!"),
+              entry: [say("Yay, I won!"), "computerWin"],
               on: {ENDSPEECH: "#result"},
             },
             wasWrong: {
-              entry: say("Oh, bother!"),  // say are you sure, have you been messing with me? etc
-              on: {ENDSPEECH: "#userTurn"},
+              initial: "prompt",
+              on: { RECOGNISED: [
+                {
+                  target: ".no",
+                  cond: (context) => yesNoResponse(context) == 'no',
+                },
+                {
+                  target: ".yes",
+                  cond: (context) => yesNoResponse(context) == 'yes',
+                },
+                {
+                  target: ".bye",
+                },
+              ],
+              TIMEOUT: ".bye",
+              },
+              states: {
+                prompt: {
+                  entry: say(`But... based on what you said, there is only one fnarg it could be! Did you lie to me?`),
+                  on: {ENDSPEECH: "ask"},
+                },
+                ask: {
+                  entry: send("LISTEN"),
+                },
+                no: {
+                  entry: say("I don't believe you."),
+                  on: {ENDSPEECH: "bye"},
+                },
+                yes: {
+                  entry: say("How could you!"),
+                  on: {ENDSPEECH: "bye"},
+                },
+                bye: {
+                  entry: say("You're a rotten liar and I don't wanna play with you anymore."),
+                  exit: "removeCards",
+                  on: {ENDSPEECH: "#idle"}
+                }
+              },
             },
             nomatch: {
-              entry: say("I don't understand, please repeat!"),
+              entry: send((context) => ({
+                type: "SPEAK", 
+                value: sayNoMatch(context, 'yesnoResponse')
+              })),
+              exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
               on: {ENDSPEECH: "ask"},
             },
           },
@@ -568,7 +802,8 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
     },
     userTurn: {
       id: "userTurn",
-      initial: "prompt",
+      entry: ["userTurn", assign({noMatchCount: 0}), assign({promptCount: 0}), assign({yourTurn: (context) => shuffle(context.yourTurn)})],
+      initial: "first",
       on: {
         RECOGNISED: [
           {
@@ -579,13 +814,41 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
             target: ".respond",
             cond: (context) => isYesNoQuestion(context),
           },
-          {target: ".nomatch"},
+          {
+            target: ".nomatch",
+            cond: (context) => context.noMatchCount < 6,
+          },
+          {
+            target: "#noInputGoodbye",
+          },
         ],
-        TIMEOUT: ".reprompt",
+        TIMEOUT: [
+          {
+            target: ".reprompt",
+            cond: (context) => context.promptCount < 4,
+          },
+          {
+            target: "#noInputGoodbye",
+          },
+      ]
       },
       states:{
+        first: {
+          always: [
+            {
+              target: "ask",
+              cond: (context) => context.turnCount < 1,
+            },
+            {
+              target: "prompt",
+            },
+          ],
+        },
         prompt: {
-          entry: say('Your turn!'),
+          entry: send((context) => ({
+            type: "SPEAK",
+            value: shuffle(context.yourTurn)[0],
+          })),
           on: {ENDSPEECH: "ask"}
         },
         ask: {
@@ -608,7 +871,13 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
                   target: "gender",
                   cond: (context) => aboutGender(context),
                 },
-                {target: "nomatch"},
+                {
+                  target: "nomatch",
+                  cond: (context) => context.noMatchCount < 6,
+                },
+                {
+                  target: "#noInputGoodbye",
+                },
               ],
             },
             yesno: {
@@ -637,7 +906,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
                   on: {ENDSPEECH: "#computerTurn"},
                 },
                 yes: {
-                  entry: say("Congratulations, you won!"),
+                  entry: [say("Congratulations, you won!"), "userWin"],
                   on: {ENDSPEECH: "#result"}
                 }
               },
@@ -647,41 +916,90 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
               on: { ENDSPEECH: "#computerTurn" },
             },
             nomatch: {
-              entry: say("I don't know that. You will have to ask about something else."),
+              entry: send((context) => ({
+                type: "SPEAK", 
+                value: sayNoMatch(context, 'outOfVocab')
+              })),
+              exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
               on: { ENDSPEECH: "#userTurn.ask" },
             },
           },
         },
         reprompt: {
-          entry: say("It's your turn!"),
+          entry: say(shuffle(yourTurnReprompts)[0]),
+          exit: assign({promptCount: (context) => context.promptCount +1}),
           on: { ENDSPEECH: "ask" },
         },
         nomatch: {
-          entry: say("Sorry, I don't understand. Are you sure that was a yes/no question?"),
+          entry: send((context) => ({
+            type: "SPEAK", 
+            value: sayNoMatch(context, 'notYesnoQuestion')
+          })),
+          exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
           on: { ENDSPEECH: "ask" },
         },
       },
     },
     result: {
+      entry: ["removeCards", assign({noMatchCount: 0}), assign({promptCount: 0})],
       id: "result",
       initial: "prompt",
       on: {RECOGNISED: [
         {
           target: "#newGame",
           cond: (context) => yesNoResponse(context) == 'yes',
+          actions: assign({gameNr: (context) => context.gameNr+1}),
         },
         {
           target: ".goodbye",
-        }
+          cond: (context) => yesNoResponse(context) == 'no',
+        },
+        {
+          target: ".nomatch",
+          cond: (context) => context.noMatchCount < 5,
+        },
+        {
+          target: "#noInputGoodbye",
+        },
+      ],
+      TIMEOUT: [
+        {
+          target: "#noInputGoodbye",
+          cond: (context) => context.promptCount > 4
+        },
+        {
+          target: ".reprompt1",
+          cond: (context) => context.promptCount % 2 == 1,
+        },
+        {
+          target: ".reprompts",
+        },
       ],
       ENDSPEECH: ".ask",
     },
       states: {
         prompt: {
-          entry: say(`That was fun! Do you want to play again?`)
+          entry: say(`That was fun! Do you want to play again?`),
+          exit: assign({promptCount: (context) => context.promptCount +1}),
+        },
+        reprompt1: {
+          entry: say("Do you want to play again?"),
+          exit: assign({promptCount: (context) => context.promptCount +1}),
+        },
+        reprompts: {
+          entry: say(shuffle(noResponseReprompts)[0]),
+          exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
         },
         ask: {
           entry: send("LISTEN"),
+        },
+        nomatch: {
+          entry: send((context) => ({
+            type: "SPEAK", 
+            value: sayNoMatch(context, 'yesnoResponse')
+          })),
+          exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
+          on: {ENDSPEECH: "ask"},
         },
         goodbye: {
           entry: say("Alright. It's been fun playing with you! Come back soon!"),

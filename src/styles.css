@@ -6,11 +6,34 @@
 
 * {box-sizing: border-box;}
 
-/* .container {
-  position: relative;
+.infoText {
+  position: absolute;
+  top: 17%;
+  left: 10%;
   width: 50%;
   max-width: 300px;
-} */
+  font-family: IBM Plex Mono, monospace;
+  font-style: italic;
+  font-weight: light;
+  font-size: 20pt;
+  text-align: center;
+  color: #532040dd;
+}
+
+.userCardName {
+  position: relative;
+  float: right;
+  top: 30%;
+  right: 22%;
+  width: 50%;
+  max-width: 300px;
+  font-family: IBM Plex Mono, monospace;
+  font-style: italic;
+  font-weight: light;
+  font-size: 17pt;
+  text-align: center;
+  color: rgba(44, 55, 97, 0.737);
+}
 
 .image {
   display: block;
@@ -50,6 +73,9 @@
   opacity:0;
   color: white;
   font-size: 20px;
+  font-family: IBM Plex Mono, monospace;
+  font-style: italic;
+  font-weight: light;
   padding: 40%;
   text-align: center;
 }
@@ -89,7 +115,7 @@ p.clear {
 
 html, body {
   height: 100vh;
-  background: #f6f0cb; /* hsla(193, 25%, 85%, 0.7) */
+  background: #ffd6bd; /* hsla(193, 25%, 85%, 0.7) */
 }
 
 
@@ -146,7 +172,7 @@ html, body {
   border-radius: 50px;
   cursor: pointer;
   border: 0;
-  background-color: #ba6969;
+  background-color: #510541b0;
   z-index: 0;
 }
 .control .circle-click {
@@ -190,7 +216,7 @@ html, body {
 }
 
 .flex:hover {
-  background: hsl(56, 100%, 77%);
+  background: hsl(166, 100%, 77%);
 }
 
 img {

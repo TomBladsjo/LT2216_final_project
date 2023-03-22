@@ -22,10 +22,10 @@ interface Parameters {
   ttsLexicon: string;
   asrLanguage: string;
   azureKey: string;
-  azureNLUKey: string;
+/*   azureNLUKey: string;
   azureNLUUrl: string;
   azureNLUprojectName: string;
-  azureNLUdeploymentName: string;
+  azureNLUdeploymentName: string; */
 }
 
 interface ChatInput {
@@ -63,20 +63,23 @@ interface SDSContext {
   voice: SpeechSynthesisVoice;
   ttsUtterance: MySpeechSynthesisUtterance;
   recResult: Hypothesis[];
-  nluResult: any;
+ /*  nluResult: any; */
   ttsAgenda: string;
   azureAuthorizationToken: string;
   audioCtx: any;
 
   topic: any;
 
-  promptcount: number;
-  nomatchcount: number;
+  turnCount: number;
+  promptCount: number;
+  noMatchCount: number;
   asrHypothesis: Hypothesis;
-  nluHypothesis: any;
+
 
   // Implement later if I have time:
-  nCards: number; // Default: 20? User can say "change n of cards" and specify other. Affects difficulty.
+  // nCards: number; // Default: 20? User can say "change n of cards" and specify other. Affects difficulty.
+
+  gameNr: number;
 
   names: {[index: string]: string};
   //  Image URLs:
@@ -91,6 +94,14 @@ interface SDSContext {
 
   currentProperty: Property;
   nextQuestion: string;
+
+  yourTurn: string[];
+  myTurn: string[];
+  yourTurnReprompts: string[];
+  noResponseReprompts: string[];
+  noMatch: string[];
+  noMatchOOV: string[];
+  
 }
 
 type SDSEvent =
