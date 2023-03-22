@@ -454,8 +454,8 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
     init: {
       entry: assign({deck: shuffle(allCards)}),
       on: {
-        TTS_READY: "#game", //welcome
-        CLICK: "#game", //welcome
+        TTS_READY: "#welcome", 
+        CLICK: "#welcome", 
       },
     },
     help: {
@@ -469,6 +469,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
       on: {ENDSPEECH: "#idle"}
     },
     welcome: {
+        id: "welcome",
         entry: [assign({noMatchCount: 0}), assign({promptCount: 0})],
         initial: "prompt",
         on: {
