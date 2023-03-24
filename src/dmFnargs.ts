@@ -112,7 +112,7 @@ const relevantProperty = (context: SDSContext) => {
   return false;
 };
 
-const question = (property: Property) => {
+const question = (property: Property) => {   // In this function, the shuffle functions get called anew each time I reenter the state where it's called.
   const isVariations = ['Is it', 'Is yours', 'Is your fnarg'];
   const doesVariations = ['Does it', 'Does yours', 'Does your fnarg'];
   let f = property.feature;
@@ -385,9 +385,6 @@ const sayMyTurn = (context: SDSContext) => {
   }
 }
 
-const sayYourTurn = () => {
-  return shuffle(yourturn)[0];
-}
 
 const sayUserCard = (context: SDSContext) => {
   const firstGame = 'Alright! This is your fnarg, that I will try to guess. You can see its name under the image.';
@@ -515,14 +512,14 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
             on: {ENDSPEECH: "ask"},
           },
           reprompts: {
-            entry: say(shuffle(noResponseReprompts)[0]),
+            entry: say(shuffle(noResponseReprompts)[0]),  // Shuffle returns same reprompt when reentering the state
             exit: assign({promptCount: (context) => context.promptCount +1}),
             on: {ENDSPEECH: "ask"},
           },
           nomatch: {
             entry: send((context) => ({
               type: "SPEAK", 
-              value: sayNoMatch(context, 'yesnoResponse')
+              value: sayNoMatch(context, 'yesnoResponse') // Shuffle returns same reprompt when reentering the state (I think?)
             })),
             exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
             on: {ENDSPEECH: "reprompt1"},
@@ -599,7 +596,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
               always: [
                 {
                   target: "turnChange",
-                  cond: (context) => Math.random() > 0.7,
+                  cond: (context) => Math.random() > 0.7,  // random seems to re-use result when reentering the state 
                 },
                 {
                   target: "statusCheck",
@@ -636,7 +633,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
                 target: "#userTurn",
                 cond: (context) => !!yesNoResponse(context),
                 actions: [assign({computerImages: (context) => filterCards(context, yesNoResponse(context) as string)}), 
-                  assign({currentProperty: (context) => relevantProperty(context) as Property})
+                  assign({currentProperty: (context) => relevantProperty(context) as Property})  // relevantProperty function seems to actually reshuffle each time
                 ], 
               },
               {
@@ -671,7 +668,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
               on: { ENDSPEECH: "ask" },
             },
             reprompt: {
-              entry: say(shuffle(noResponseReprompts)[0]),
+              entry: say(shuffle(noResponseReprompts)[0]),  // Shuffle returns same reprompt when reentering the state
               exit: assign({promptCount: (context) => context.promptCount +1}),
               on: {ENDSPEECH: "ask"},
             },
@@ -681,7 +678,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
             nomatch: {
               entry: send((context) => ({
                 type: "SPEAK", 
-                value: sayNoMatch(context, 'yesnoResponse')
+                value: sayNoMatch(context, 'yesnoResponse') // Function returns same reprompt when reentering the state
               })),
               exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
               on: { ENDSPEECH: "ask" },
@@ -738,7 +735,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
               on: { ENDSPEECH: "ask" },
             },
             reprompt: {
-              entry: say(shuffle(noResponseReprompts)[0]),
+              entry: say(shuffle(noResponseReprompts)[0]),  // Shuffle returns same reprompt when reentering the state
               exit: assign({promptCount: (context) => context.promptCount +1}),
               on: {ENDSPEECH: "ask"},
             },
@@ -927,7 +924,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           },
         },
         reprompt: {
-          entry: say(shuffle(yourTurnReprompts)[0]),
+          entry: say(shuffle(yourTurnReprompts)[0]),  // Shuffle returns same reprompt when reentering the state
           exit: assign({promptCount: (context) => context.promptCount +1}),
           on: { ENDSPEECH: "ask" },
         },
@@ -988,7 +985,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
           exit: assign({promptCount: (context) => context.promptCount +1}),
         },
         reprompts: {
-          entry: say(shuffle(noResponseReprompts)[0]),
+          entry: say(shuffle(noResponseReprompts)[0]),  // Shuffle returns same reprompt when reentering the state
           exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
         },
         ask: {
@@ -997,7 +994,7 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
         nomatch: {
           entry: send((context) => ({
             type: "SPEAK", 
-            value: sayNoMatch(context, 'yesnoResponse')
+            value: sayNoMatch(context, 'yesnoResponse')  
           })),
           exit: assign({noMatchCount: (context) => context.noMatchCount +1}),
           on: {ENDSPEECH: "ask"},
@@ -1014,7 +1011,15 @@ export const dmMachine: MachineConfig<SDSContext, any, SDSEvent> = {
 };
 
 
-
+/* 
+So, as you see, there are several places where the shuffle function does not 
+seem to be called again when the machine reenters a state. I am not entirely 
+sure about all of these, because to be honest I ended up spending way more
+time on development than on testing, and that stuff takes time. In the end, I 
+just solved the most annoying things by assigning and reassigning them to the 
+context, but ideally I don't want to clutter up my context with every possible 
+utterance at all times. 
+*/
 
 
 
